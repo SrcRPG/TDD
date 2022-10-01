@@ -44,7 +44,7 @@ TEST_F(SoundexEncoding, LimitsLengthToFourCharacters){
 }
 
 TEST_F(SoundexEncoding, IgnoresVowelLikeLetters){
-        ASSERT_THAT(soundex.encode("Baeiouhycdl"), Eq("B234"));
+        ASSERT_THAT(soundex.encode("BaAeEiIoOuUhHyYcdl"), Eq("B234"));
 }
 
 TEST_F(SoundexEncoding, CombinesDuplicateEncodings){
@@ -55,7 +55,21 @@ TEST_F(SoundexEncoding, CombinesDuplicateEncodings){
 	ASSERT_THAT(soundex.encode("Abfcgdt"), Eq("A123"));
 }
 
+TEST_F(SoundexEncoding, UppercasesFirstLetter){
+        ASSERT_THAT(soundex.encode("abcd"), StartsWith("A"));
+}
 
+TEST_F(SoundexEncoding, CombinesDuplicateCodesWhen2ndLetterDuplicates1st){
+        ASSERT_THAT(soundex.encode("Bbcd"), Eq("B230"));
+}
+
+TEST_F(SoundexEncoding, IgnoresCaseWhenEncodingConsonants){
+        ASSERT_THAT(soundex.encode("BCDL"), Eq(soundex.encode("Bcdl")));
+}
+
+TEST_F(SoundexEncoding, DoesNotCombineDuplicateEncodingsSeparateByVowels){
+        ASSERT_THAT(soundex.encode("Jbob"), Eq("J110"));
+}
 
 int main(int argc, char **argv)
 {

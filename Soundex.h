@@ -2,13 +2,14 @@
 #define Soundex_h
 #include <string>
 #include <unordered_map>
+#include <cctype>
 
 class Soundex {
 	public:
 		static const size_t MaxCodeLength{4};
 		
 		std::string encode(const std::string& word) const{
-			return zeroPad(head(word) + encodedDigits(tail(word)));
+			return zeroPad(upperFront(head(word)) + tail(encodedDigits(word)));
 		}
 		
 		std::string encodedDigit(char letter) const{
@@ -20,24 +21,41 @@ class Soundex {
 				{'m', "5"}, {'n', "5"},
 				{'r', "6"},
 			};
-			auto it = encodings.find(letter);
-			return it == encodings.end() ? "" : it->second;
+			auto it = encodings.find(lower(letter));
+			return it == encodings.end() ? NotADigit : it->second;
 		}
 		
 	private:
+		const std::string NotADigit{"*"};
 		
 		std::string encodedDigits(const std::string& word) const { 
 			std::string encoding;
-			for (auto letter: word)
-			{
-				if (isComplete(encoding)) break;
-				if (encodedDigit(letter) != lastDigit(encoding)){
-					encoding += encodedDigit(letter);
-				}
-			}
+			encodeHead(encoding, word);
+			encodeTail(encoding, word);
 			return encoding;
 		}
 		
+		void encodeHead(std::string& encoding, const std::string& word) const{
+			encoding += encodedDigit(word.front());
+		}
+		
+		void encodeTail(std::string& encoding, const std::string& word) const{
+			for (auto i = 1u; i < word.length(); i++)
+			{
+				if (!isComplete(encoding))
+					encodeLetter(encoding, word[i], word[i-1]);
+			}
+		}
+		
+		void encodeLetter(std::string& encoding, char letter, char lastLetter) const{
+			auto digit = encodedDigit(letter);
+			if (digit != NotADigit && (digit != lastDigit(encoding) || isVowel(lastLetter)))
+				encoding += digit;
+		}
+		
+		bool isVowel(char letter) const {
+			return std::string("aeiouy").find(tolower(letter)) != std::string::npos;
+		}
 		std::string head(const std::string& word) const {
 			return word.substr(0, 1);
 		}
@@ -47,17 +65,25 @@ class Soundex {
 		}
 		
 		std::string lastDigit(const std::string& encoding) const {
-			if (encoding.empty()) return "";
-			return std::string(1, encoding.back());
+			if (encoding.empty()) return NotADigit;
+			return std::string(1, encoding.back());	// 1 character, value = last value of encoding
 		}
 		
 		bool isComplete (const std::string& encoding) const{
-			return encoding.length() == MaxCodeLength - 1;
+			return encoding.length() == MaxCodeLength;
 		}
 
 		std::string zeroPad(const std::string& word) const{
 		  auto zerosNeeded = MaxCodeLength - word.length();
 		  return word + std::string(zerosNeeded, '0');
+		}
+		
+		std::string upperFront(const std::string& string) const {
+			return std::string(1, std::toupper(static_cast<unsigned char>(string.front())));
+		}
+		
+		char lower(char c) const {
+			return std::tolower(static_cast<unsigned char>(c));
 		}
 };
 
